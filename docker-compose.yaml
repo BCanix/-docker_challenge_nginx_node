@@ -1,0 +1,46 @@
+version: '3'
+
+services:
+  mysql:
+    build:
+      context: ./mysql
+      dockerfile: Dockerfile
+    container_name: db_challenge
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    tty: true
+    environment:
+      MYSQL_ROOT_PASSWORD: "123456"
+    volumes:
+      - ./mysql/data:/var/lib/mysql
+    networks:
+      - nodenet
+
+  server:
+    build:
+      context: ./node
+      dockerfile: Dockerfile
+    entrypoint: dockerize -wait tcp://mysql:3306 -timeout 20s docker-entrypoint.sh
+    container_name: server_challenge
+    command: node ./src/index.js
+    tty: true
+    depends_on:
+      - mysql
+    networks:
+      - nodenet
+
+  nginx:
+    build: 
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: nginx_challenge
+    tty: true
+    ports:
+      - 8080:80
+    networks:
+      - nodenet
+  
+
+networks:
+  nodenet:
+    driver: bridge
